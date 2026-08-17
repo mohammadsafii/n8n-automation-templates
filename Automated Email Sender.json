@@ -1,0 +1,423 @@
+{
+  "name": "Google Sheets Notification Router",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "14822309-5034-4c7a-abf8-6ca5e12aff85",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        320,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1veboQcso6-MtFzR228DPg0OBBwpRr9CxxNEQRqeVwUE",
+          "mode": "list",
+          "cachedResultName": "EmailsCopy",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1veboQcso6-MtFzR228DPg0OBBwpRr9CxxNEQRqeVwUE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1179389955,
+          "mode": "list",
+          "cachedResultName": "aevon_outreach",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1veboQcso6-MtFzR228DPg0OBBwpRr9CxxNEQRqeVwUE/edit#gid=1179389955"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a83cf662-1180-45eb-8b58-82d99322b43a",
+      "name": "Read Pending Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        544,
+        64
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "pmj7opRrZb1BYsah",
+          "name": "mosafi2604@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.Type }}",
+              "rightValue": "SMS",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "id": "98f4578a-ca20-41b6-a9dd-a813d94bbff9"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "eff4c126-9376-472f-a042-c40f5cf7c00b",
+      "name": "Check Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        992,
+        64
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.Email }}",
+        "subject": "={{ $json.Email_Subject }}",
+        "emailType": "text",
+        "message": "={{ $json.Copy }}",
+        "options": {}
+      },
+      "id": "c0528658-86a6-423d-a20b-f8bfacf0aa30",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1216,
+        64
+      ],
+      "webhookId": "d5f2b38b-b68c-4044-a0e0-25c83925012d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "zr3UWBEoGv3HQjDW",
+          "name": "aevonai.co"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1veboQcso6-MtFzR228DPg0OBBwpRr9CxxNEQRqeVwUE",
+          "mode": "list",
+          "cachedResultName": "EmailsCopy",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1veboQcso6-MtFzR228DPg0OBBwpRr9CxxNEQRqeVwUE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1179389955,
+          "mode": "list",
+          "cachedResultName": "aevon_outreach",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1veboQcso6-MtFzR228DPg0OBBwpRr9CxxNEQRqeVwUE/edit#gid=1179389955"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Sent",
+            "Sent_At": "={{ $now.toISO() }}",
+            "Email": "={{ $('Read Pending Rows').item.json.Email }}"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Type",
+              "displayName": "Type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email_Subject",
+              "displayName": "Email_Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Copy",
+              "displayName": "Copy",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sent_At",
+              "displayName": "Sent_At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "threadId",
+              "displayName": "threadId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "labelIds",
+              "displayName": "labelIds",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "25da562d-cfdd-4872-9fd3-d682dd28580a",
+      "name": "Update Status (Email)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1440,
+        64
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "pmj7opRrZb1BYsah",
+          "name": "mosafi2604@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        768,
+        64
+      ],
+      "id": "89fa067a-a4fb-4c51-8526-25cafe2f6f8a",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1664,
+        64
+      ],
+      "id": "c3d98e94-2d25-4b07-8e03-99e4bb8551f4",
+      "name": "Wait",
+      "webhookId": "08acaec5-e098-437e-88fa-7b526ef88be5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Read Pending Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Pending Rows": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Type": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Update Status (Email)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Check Type",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status (Email)": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d59569c5-3142-43ff-b56c-6b348e45e56e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1d5d8bf41f38768dd33c87833ea54b43665455f911ea98c47234c2062f3e7e4c"
+  },
+  "nodeGroups": [],
+  "id": "v7GCOPjiAOYt9UeQ",
+  "tags": []
+}
