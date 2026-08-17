@@ -1,0 +1,1400 @@
+{
+  "name": "Invoice Automation for Dispatchers",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ⚙️ TRIGGER & CONFIG\nWeekly schedule kicks this off. Pulls client config + reads the Business Config and Control tabs from the master Google Sheet to know which companies to process and whether they're grouped or per-driver billing.",
+        "height": 330,
+        "width": 848,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2016,
+        336
+      ],
+      "id": "47eed063-3476-4fa9-84fb-928dacfb9ae3",
+      "name": "Section - ⚙️ TRIGGER & CONFIG"
+    },
+    {
+      "parameters": {
+        "content": "## 🔁 PER-COMPANY LOOP: PULL & FILTER LOADS\nLoops through each company one at a time. Reads that company's load tab, filters out anything already invoiced, and checks if there are any unbilled loads left to process.",
+        "height": 586,
+        "width": 992,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1120,
+        80
+      ],
+      "id": "d45fa423-7bee-4408-abdd-fdf021765b35",
+      "name": "Section - 🔁 PER-COMPANY LOOP: PULL & FILTER LOADS"
+    },
+    {
+      "parameters": {
+        "content": "## 👤 PATH A — PER-DRIVER INVOICES\nGroups loads by driver, loops each driver, generates their own invoice #, builds the HTML, renders a PDF via Gotenberg, updates the sheet, marks loads invoiced, and emails that driver's invoice.",
+        "height": 410,
+        "width": 2560,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        -64
+      ],
+      "id": "70afdbd4-347c-4dd5-ad3e-a4d6e92ba042",
+      "name": "Section - 👤 PATH A — PER-DRIVER INVOICES"
+    },
+    {
+      "parameters": {
+        "content": "## 📄 PATH B — GROUPED COMPANY INVOICE\nBuilds one invoice covering all of the company's unbilled loads together, generates the invoice number, renders PDF via Gotenberg, updates the sheet, marks loads invoiced, and emails the company one combined invoice.",
+        "height": 410,
+        "width": 2112,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        32,
+        480
+      ],
+      "id": "22f5df28-0fd8-44e3-ba5d-b01403695e2f",
+      "name": "Section - 📄 PATH B — GROUPED COMPANY INVOICE"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1,
+                5
+              ],
+              "triggerAtHour": 19
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1952,
+        512
+      ],
+      "id": "c68bac30-ab2c-4176-8085-d73c55f61788",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7df21668-34dd-4941-af2d-7875136ad85b",
+              "name": "sheetId",
+              "value": "YOUR_GOOGLE_SHEET_ID_HERE",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1728,
+        512
+      ],
+      "id": "6959f165-4373-4d95-9ee7-0d0936f3a304",
+      "name": "Client Config"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Client Config').item.json.sheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "=828152487",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1504,
+        512
+      ],
+      "id": "d4494c8b-54cc-4006-8cc9-0f2b50273ecf",
+      "name": "Read Business Config"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Client Config').item.json.sheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "819250553",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1280,
+        512
+      ],
+      "id": "547cfd9d-3568-4767-bd6b-ea859fad1fe3",
+      "name": "Read Control Tab"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1056,
+        512
+      ],
+      "id": "340754a3-e087-4572-b9be-ca9b375f0f00",
+      "name": "Loop Companies"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Client Config').item.json.sheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $json[\"Sheet GID\"] }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -832,
+        272
+      ],
+      "id": "c8080289-af51-4383-9260-ece9ea31c095",
+      "name": "Read Company Tab"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4dc7566a-996b-4b74-b4f4-e1d96cdc5f1e",
+              "leftValue": "={{ $('Loop Companies').item.json.IsDriverBased }}",
+              "rightValue": "Yes",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -160,
+        352
+      ],
+      "id": "441e976f-495b-464e-8c80-aae5934ef32a",
+      "name": "Check Driver Based"
+    },
+    {
+      "parameters": {
+        "jsCode": "const lineItems = $('Filter Unbilled Loads').item.json.rows;\n\nconst totalAmount = lineItems.reduce((sum, r) => sum + Number(r.Amount || 0), 0);\nconst totalService = lineItems.reduce((sum, r) => sum + Number(r.Service || 0), 0);\n\nreturn [{\n  json: {\n    lineItems,\n    totalAmount,\n    totalService\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        608
+      ],
+      "id": "46a41a40-5855-49c9-bb4d-fb0baefa3fc4",
+      "name": "Build Grouped Invoice Data"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "460a534b-a8bb-441e-a20c-2d28bde743a4",
+              "name": "invoiceNumber",
+              "value": "={{ String($('Loop Companies').item.json[\"Invoice Number\"]).padStart(2, '0') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        608
+      ],
+      "id": "46560d89-16e6-4d20-be75-ce5df803ba60",
+      "name": "Format Invoice Number"
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Read Business Config').item.json;\nconst company = $('Loop Companies').item.json.Company;\nconst invoiceNumber =$json.invoiceNumber;\nconst { lineItems, totalAmount, totalService } = $('Build Grouped Invoice Data').item.json;\n\nconst invoiceDate = new Date();\nconst dueDate = new Date(invoiceDate);\ndueDate.setDate(dueDate.getDate() + Number(config.PaymentTermDays \vert{}\vert{} 7));\n\nconst formatDate = (d) => d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });\nconst formatMoney = (n) => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n\nconst addressHtml = (config.Address || '').replace(/\\n/g, '<br>');\n\nconst rowsHtml = lineItems.map(r => `\n  <tr>\n    <td>${r.Date \vert{}\vert{} ''}</td>\n    <td>${r.Broker || ''}</td>\n    <td>${r['Load#'] \vert{}\vert{} ''}</td>\n    <td>${r.Origin || ''}</td>\n    <td>${r.Destination \vert{}\vert{} ''}</td>\n    <td>${r.Driver || ''}</td>\n    <td class=\"num\">${formatMoney(r.Amount)}</td>\n    <td class=\"num accent\">${formatMoney(r.Service)}</td>\n  </tr>\n`).join('');\n\nconst html = `\n<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<style>\n  @page { margin: 0; size: A4; }\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body {\n    font-family: 'Helvetica Neue', Arial, sans-serif;\n    color: #222;\n    font-size: 12px;\n    padding: 0;\n  }\n  .header {\n    background: ${config.PrimaryColor};\n    color: #fff;\n    padding: 30px 40px;\n    display: flex;\n    justify-content: space-between;\n    align-items: flex-start;\n  }\n  .header-left { display: flex; align-items: center; gap: 20px; }\n  .header-left img { height: 95px; width: auto; }\n  .header-left .biz-name { font-size: 30px; font-weight: bold; }\n  .header-right { text-align: right; }\n  .header-right .invoice-title {\n    font-size: 34px;\n    font-weight: bold;\n    letter-spacing: 2px;\n    margin-bottom: 10px;\n  }\n  .invoice-num-box {\n    display: inline-flex;\n    margin-bottom: 8px;\n  }\n  .invoice-num-box .label {\n    background: rgba(255,255,255,0.12);\n    padding: 6px 14px;\n    font-weight: bold;\n    font-size: 12px;\n  }\n  .invoice-num-box .value {\n    background: ${config.AccentColor};\n    padding: 6px 18px;\n    font-weight: bold;\n    font-size: 14px;\n  }\n  .header-right .meta-row {\n    font-size: 12px;\n    margin-top: 4px;\n  }\n  .header-right .meta-row .meta-label { font-weight: bold; margin-right: 8px; }\n\n  .contact-strip {\n    background: #f4f5f7;\n    padding: 10px 40px;\n    font-size: 11px;\n    color: #444;\n    display: flex;\n    gap: 24px;\n  }\n\n  .billing-row {\n    display: flex;\n    justify-content: space-between;\n    padding: 18px 40px;\n    border-bottom: 1px solid #e2e2e2;\n  }\n  .billing-row .block { flex: 1; }\n  .billing-row .block-label {\n    color: ${config.AccentColor};\n    font-weight: bold;\n    font-size: 11px;\n    margin-bottom: 4px;\n  }\n  .billing-row .block-value {\n    font-weight: bold;\n    font-size: 14px;\n    text-transform: uppercase;\n  }\n\n  table.loads {\n    width: calc(100\% - 80px);\n    margin: 20px 40px;\n    border-collapse: collapse;\n  }\n  table.loads thead th {\n    background:${config.PrimaryColor};\n    color: #fff;\n    font-size: 11px;\n    text-align: left;\n    padding: 10px 8px;\n  }\n  table.loads thead th.service {\n    background: ${config.AccentColor};\n  }\n  table.loads tbody td {\n    padding: 8px;\n    font-size: 11px;\n    border-bottom: 1px solid #eee;\n  }\n  table.loads tbody tr:nth-child(even) { background: #fafafa; }\n  table.loads td.num { text-align: right; }\n  table.loads td.accent { color: ${config.AccentColor}; font-weight: bold; }\n\n  .footer-row {\n    display: flex;\n    justify-content: space-between;\n    padding: 10px 40px 30px 40px;\n    align-items: flex-end;\n  }\n  .thanks { max-width: 55%; font-size: 11px; color: #555; }\n  .thanks .thanks-title { color: ${config.AccentColor}; font-weight: bold; font-size: 12px; margin-bottom: 4px; }\n\n  .totals { width: 300px; }\n  .totals .row {\n    display: flex;\n    justify-content: space-between;\n    padding: 10px 16px;\n    font-size: 12px;\n  }\n  .totals .row.gross { background:${config.PrimaryColor}; color: #fff; }\n  .totals .row.fee { background: #eef1f5; color: #222; }\n  .totals .row.final {\n    background: ${config.AccentColor};\n    color: #fff;\n    font-weight: bold;\n    font-size: 15px;\n  }\n</style>\n</head>\n<body>\n\n  <div class=\"header\">\n    <div class=\"header-left\">\n      <img src=\"${config.LogoBase64}\" />\n      <div class=\"biz-name\">${config.BusinessName}</div>\n    </div>\n    <div class=\"header-right\">\n      <div class=\"invoice-title\">INVOICE</div>\n      <div class=\"invoice-num-box\">\n        <div class=\"label\">INVOICE #</div>\n        <div class=\"value\">${invoiceNumber}</div>\n      </div>\n      <div class=\"meta-row\"><span class=\"meta-label\">INVOICE DATE:</span>${formatDate(invoiceDate)}</div>\n      <div class=\"meta-row\"><span class=\"meta-label\">DUE DATE:</span>${formatDate(dueDate)}</div>\n    </div>\n  </div>\n\n  <div class=\"contact-strip\">\n    <span>${config.Phone}</span>\n    <span>${addressHtml}</span>\n  </div>\n\n  <div class=\"billing-row\">\n    <div class=\"block\">\n      <div class=\"block-label\">INVOICE FOR PAYABLE TO:</div>\n      <div class=\"block-value\">${company}</div>\n    </div>\n    <div class=\"block\" style=\"text-align:right;\">\n      <div class=\"block-label\">BILLED BY:</div>\n      <div class=\"block-value\">${config.BusinessName}</div>\n    </div>\n  </div>\n\n  <table class=\"loads\">\n    <thead>\n      <tr>\n        <th>DATE</th>\n        <th>BROKER</th>\n        <th>LOAD #</th>\n        <th>ORIGIN</th>\n        <th>DESTINATION</th>\n        <th>DRIVER</th>\n        <th>AMOUNT</th>\n        <th class=\"service\">SERVICE (${config.ServiceFeePercent}\%)</th>\n      </tr>\n    </thead>\n    <tbody>\n${rowsHtml}\n    </tbody>\n  </table>\n\n  <div class=\"footer-row\">\n    <div class=\"thanks\">\n      <div class=\"thanks-title\">THANK YOU FOR YOUR BUSINESS!</div>\n      <div>We truly appreciate the opportunity to support your business. If you have any questions, please don't hesitate to reach out.</div>\n    </div>\n    <div class=\"totals\">\n      <div class=\"row gross\"><span>TOTAL GROSS REVENUE</span><span>${formatMoney(totalAmount)}</span></div>\n      <div class=\"row fee\"><span>DISPATCH FEE (${config.ServiceFeePercent}%)</span><span>${formatMoney(totalService)}</span></div>\n      <div class=\"row final\"><span>FINAL TOTAL</span><span>${formatMoney(totalService)}</span></div>\n    </div>\n  </div>\n\n</body>\n</html>\n`;\n\nreturn [{\n  json: { invoiceNumber, company },\n  binary: {\n    data: {\n      data: Buffer.from(html).toString('base64'),\n      mimeType: 'text/html',\n      fileName: 'index.html'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        608
+      ],
+      "id": "1d4d5399-e762-4398-8b69-cd4addc52bdb",
+      "name": "Build Invoice HTML"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_GOTENBERG_SERVER_URL:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        768,
+        608
+      ],
+      "id": "c10d559f-61fd-4bef-b218-f6d3957167ac",
+      "name": "Generate PDF - Gotenberg"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Client Config').item.json.sheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "=819250553",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Loop Companies').item.json.row_number }}",
+            "Invoice Number": "={{ $('Loop Companies').item.json[\"Invoice Number\"] + 1 }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Sheet GID",
+              "displayName": "Sheet GID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice Number",
+              "displayName": "Invoice Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "IsDriverBased",
+              "displayName": "IsDriverBased",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        992,
+        608
+      ],
+      "id": "48422eac-bea8-4718-8591-70673b8fc1fb",
+      "name": "Increment Invoice Number"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Client Config').item.json.sheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Loop Companies').item.json[\"Sheet GID\"] }}",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "Invoice Status": "={{ 'Invoice generated (' + $now.format('MM/dd/yyyy') + ')' }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Broker",
+              "displayName": "Broker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Load#",
+              "displayName": "Load#",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Origin",
+              "displayName": "Origin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Destination",
+              "displayName": "Destination",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Driver",
+              "displayName": "Driver",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Booked By",
+              "displayName": "Booked By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice Status",
+              "displayName": "Invoice Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1440,
+        608
+      ],
+      "id": "ea7e1a1a-7614-43c7-8a8b-81643705a673",
+      "name": "Mark Loads As Invoiced"
+    },
+    {
+      "parameters": {
+        "jsCode": "const lineItems = $('Build Grouped Invoice Data').item.json.lineItems;\nreturn lineItems.map(item => ({\n  json: {\n    row_number: item.row_number\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1216,
+        608
+      ],
+      "id": "dd555de9-58ed-475e-86f0-9632ab1ef23b",
+      "name": "Split Line Items For Update"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.recipientEmail || 'recipient@example.com' }}",
+        "subject": "={{ $json.company }} Invoice #{{ $json.invoiceNumber }} — {{ $now.format('MM/dd/yyyy') }}",
+        "emailType": "text",
+        "message": "=Please find attached the invoice for {{ $json.company }} for this week's completed loads.",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1888,
+        672
+      ],
+      "id": "b46b73d7-eb5d-445b-9c0a-5383de448c35",
+      "name": "Email Grouped Invoice"
+    },
+    {
+      "parameters": {
+        "jsCode": "const company = $('Loop Companies').item.json.Company;\nconst invoiceNumber = $('Format Invoice Number').item.json.invoiceNumber;\nconst pdfBinary = $('Generate PDF - Gotenberg').item.binary.data;\n\nconst fileName = `${company.replace(/ /g, '_')}_INV${invoiceNumber}.pdf`;\n\nreturn [{\n  json: { company, invoiceNumber },\n  binary: {\n    data: {\n      ...pdfBinary,\n      fileName: fileName,\n      mimeType: 'application/pdf'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1664,
+        608
+      ],
+      "id": "ddf3b6d2-9b0b-4735-b27d-cfdc637f20c5",
+      "name": "Prepare Email Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $('Filter Unbilled Loads').item.json.rows;\n\nconst groups = {};\nfor (const row of rows) {\n  const driver = row.Driver || 'Unassigned';\n  if (!groups[driver]) groups[driver] = [];\n  groups[driver].push(row);\n}\n\nconst driverGroups = Object.keys(groups).map(driver => {\n  const rowsForDriver = groups[driver];\n  const totalAmount = rowsForDriver.reduce((sum, r) => sum + Number(r.Amount || 0), 0);\n  const totalService = rowsForDriver.reduce((sum, r) => sum + Number(r.Service || 0), 0);\n  return { driver, lineItems: rowsForDriver, totalAmount, totalService };\n});\n\nreturn driverGroups.map(g => ({ json: g }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        160
+      ],
+      "id": "d20a941a-2bb2-49df-9073-c0dd3e9f65bf",
+      "name": "Group Loads By Driver"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        304,
+        160
+      ],
+      "id": "1efb8666-40e6-436b-9a75-c4d3938d2312",
+      "name": "Loop Drivers"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst rows = items.map(i => i.json);\n\nconst filtered = rows.filter(r => r.Amount !== '' && r.Amount != null && (r['Invoice Status'] === '' || r['Invoice Status'] == null));\n\nreturn [{\n  json: {\n    hasLoads: filtered.length > 0,\n    rows: filtered\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -608,
+        272
+      ],
+      "id": "8d57897a-4782-46b7-93cc-3686d7a58137",
+      "name": "Filter Unbilled Loads"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0d092a44-7c4b-40f2-acb6-5aa9f3e46f0d",
+              "leftValue": "={{ $json.hasLoads }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        352
+      ],
+      "id": "ad2f180d-e57c-4daa-9032-4ed782962b79",
+      "name": "Check Has Loads"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Client Config').item.json.sheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "=819250553",
+          "mode": "id"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Company",
+              "lookupValue": "={{ $('Loop Companies').item.json.Company }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        528,
+        80
+      ],
+      "id": "9ad12c89-1b46-48d7-ab62-0223bd8d7ff3",
+      "name": "Reread Current Invoice Number"
+    },
+    {
+      "parameters": {
+        "jsCode": "const current = $json[\"Invoice Number\"];\nconst invoiceNumber = String(current).padStart(2, '0');\nreturn [{ json: { invoiceNumber, rowNumber: $json.row_number } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        80
+      ],
+      "id": "5788f72d-6305-4153-970d-f89db5cd89a9",
+      "name": "Format Driver Invoice Number"
+    },
+    {
+      "parameters": {
+        "jsCode": "const config = $('Read Business Config').item.json;\nconst company = $('Loop Companies').item.json.Company;\nconst invoiceNumber = $json.invoiceNumber;\nconst driver = $('Loop Drivers').item.json.driver;\nconst lineItems = $('Loop Drivers').item.json.lineItems;\nconst totalAmount = $('Loop Drivers').item.json.totalAmount;\nconst totalService = $('Loop Drivers').item.json.totalService;\n\nconst invoiceDate = new Date();\nconst dueDate = new Date(invoiceDate);\ndueDate.setDate(dueDate.getDate() + Number(config.PaymentTermDays || 7));\n\nconst formatDate = (d) => d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });\nconst formatMoney = (n) => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });\n\nconst addressHtml = (config.Address || '').replace(/\\\\n/g, '<br>');\n\nconst rowsHtml = lineItems.map(r => `\n  <tr>\n    <td>${r.Date \vert{}\vert{} ''}</td>\n    <td>${r.Broker || ''}</td>\n    <td>${r['Load#'] \vert{}\vert{} ''}</td>\n    <td>${r.Origin || ''}</td>\n    <td>${r.Destination \vert{}\vert{} ''}</td>\n    <td>${r.Driver || ''}</td>\n    <td class=\"num\">${formatMoney(r.Amount)}</td>\n    <td class=\"num accent\">${formatMoney(r.Service)}</td>\n  </tr>\n`).join('');\n\nconst html = `\n<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<style>\n  @page { margin: 0; size: A4; }\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body {\n    font-family: 'Helvetica Neue', Arial, sans-serif;\n    color: #222;\n    font-size: 12px;\n    padding: 0;\n  }\n  .header {\n    background: ${config.PrimaryColor};\n    color: #fff;\n    padding: 30px 40px;\n    display: flex;\n    justify-content: space-between;\n    align-items: flex-start;\n  }\n  .header-left { display: flex; align-items: center; gap: 20px; }\n  .header-left img { height: 95px; width: auto; }\n  .header-left .biz-name { font-size: 30px; font-weight: bold; }\n  .header-right { text-align: right; }\n  .header-right .invoice-title {\n    font-size: 34px;\n    font-weight: bold;\n    letter-spacing: 2px;\n    margin-bottom: 10px;\n  }\n  .invoice-num-box {\n    display: inline-flex;\n    margin-bottom: 8px;\n  }\n  .invoice-num-box .label {\n    background: rgba(255,255,255,0.12);\n    padding: 6px 14px;\n    font-weight: bold;\n    font-size: 12px;\n  }\n  .invoice-num-box .value {\n    background: ${config.AccentColor};\n    padding: 6px 18px;\n    font-weight: bold;\n    font-size: 14px;\n  }\n  .header-right .meta-row {\n    font-size: 12px;\n    margin-top: 4px;\n  }\n  .header-right .meta-row .meta-label { font-weight: bold; margin-right: 8px; }\n\n  .contact-strip {\n    background: #f4f5f7;\n    padding: 10px 40px;\n    font-size: 11px;\n    color: #444;\n    display: flex;\n    gap: 24px;\n  }\n\n  .billing-row {\n    display: flex;\n    justify-content: space-between;\n    padding: 18px 40px;\n    border-bottom: 1px solid #e2e2e2;\n  }\n  .billing-row .block { flex: 1; }\n  .billing-row .block-label {\n    color: ${config.AccentColor};\n    font-weight: bold;\n    font-size: 11px;\n    margin-bottom: 4px;\n  }\n  .billing-row .block-value {\n    font-weight: bold;\n    font-size: 14px;\n    text-transform: uppercase;\n  }\n\n  table.loads {\n    width: calc(100% - 80px);\n    margin: 20px 40px;\n    border-collapse: collapse;\n  }\n  table.loads thead th {\n    background: ${config.PrimaryColor};\n    color: #fff;\n    font-size: 11px;\n    text-align: left;\n    padding: 10px 8px;\n  }\n  table.loads thead th.service {\n    background: ${config.AccentColor};\n  }\n  table.loads tbody td {\n    padding: 8px;\n    font-size: 11px;\n    border-bottom: 1px solid #eee;\n  }\n  table.loads tbody tr:nth-child(even) { background: #fafafa; }\n  table.loads td.num { text-align: right; }\n  table.loads td.accent { color: ${config.AccentColor}; font-weight: bold; }\n\n  .footer-row {\n    display: flex;\n    justify-content: space-between;\n    padding: 10px 40px 30px 40px;\n    align-items: flex-end;\n  }\n  .thanks { max-width: 55%; font-size: 11px; color: #555; }\n  .thanks .thanks-title { color: ${config.AccentColor}; font-weight: bold; font-size: 12px; margin-bottom: 4px; }\n\n  .totals { width: 300px; }\n  .totals .row {\n    display: flex;\n    justify-content: space-between;\n    padding: 10px 16px;\n    font-size: 12px;\n  }\n  .totals .row.gross { background: ${config.PrimaryColor}; color: #fff; }\n  .totals .row.fee { background: #eef1f5; color: #222; }\n  .totals .row.final {\n    background: ${config.AccentColor};\n    color: #fff;\n    font-weight: bold;\n    font-size: 15px;\n  }\n</style>\n</head>\n<body>\n\n  <div class=\"header\">\n    <div class=\"header-left\">\n      <img src=\"${config.LogoBase64}\" />\n      <div class=\"biz-name\">${config.BusinessName}</div>\n    </div>\n    <div class=\"header-right\">\n      <div class=\"invoice-title\">INVOICE</div>\n      <div class=\"invoice-num-box\">\n        <div class=\"label\">INVOICE #</div>\n        <div class=\"value\">${invoiceNumber}</div>\n      </div>\n      <div class=\"meta-row\"><span class=\"meta-label\">INVOICE DATE:</span>${formatDate(invoiceDate)}</div>\n      <div class=\"meta-row\"><span class=\"meta-label\">DUE DATE:</span>${formatDate(dueDate)}</div>\n    </div>\n  </div>\n\n  <div class=\"contact-strip\">\n    <span>${config.Phone}</span>\n    <span>${addressHtml}</span>\n  </div>\n\n  <div class=\"billing-row\">\n    <div class=\"block\">\n      <div class=\"block-label\">INVOICE FOR PAYABLE TO:</div>\n      <div class=\"block-value\">${company}</div>\n    </div>\n    <div class=\"block\" style=\"text-align:right;\">\n      <div class=\"block-label\">BILLED BY:</div>\n      <div class=\"block-value\">${config.BusinessName}</div>\n    </div>\n  </div>\n\n  <table class=\"loads\">\n    <thead>\n      <tr>\n        <th>DATE</th>\n        <th>BROKER</th>\n        <th>LOAD #</th>\n        <th>ORIGIN</th>\n        <th>DESTINATION</th>\n        <th>DRIVER</th>\n        <th>AMOUNT</th>\n        <th class=\"service\">SERVICE (${config.ServiceFeePercent}%)</th>\n      </tr>\n    </thead>\n    <tbody>\n      ${rowsHtml}\n    </tbody>\n  </table>\n\n  <div class=\"footer-row\">\n    <div class=\"thanks\">\n      <div class=\"thanks-title\">THANK YOU FOR YOUR BUSINESS!</div>\n      <div>We truly appreciate the opportunity to support your business. If you have any questions, please don't hesitate to reach out.</div>\n    </div>\n    <div class=\"totals\">\n      <div class=\"row gross\"><span>TOTAL GROSS REVENUE</span><span>${formatMoney(totalAmount)}</span></div>\n      <div class=\"row fee\"><span>DISPATCH FEE (${config.ServiceFeePercent}%)</span><span>${formatMoney(totalService)}</span></div>\n      <div class=\"row final\"><span>FINAL TOTAL</span><span>${formatMoney(totalService)}</span></div>\n    </div>\n  </div>\n\n</body>\n</html>\n`;\n\nconst fileName = `${company.replace(/ /g, '_')}_INV${invoiceNumber}_${driver.replace(/ /g, '_')}.pdf`;\n\nreturn [{\n  json: { invoiceNumber, company, driver, fileName },\n  binary: {\n    data: {\n      data: Buffer.from(html).toString('base64'),\n      mimeType: 'text/html',\n      fileName: 'index.html'\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        80
+      ],
+      "id": "35a35435-b847-4ff0-8c84-f9fc1f11e0c4",
+      "name": "Build Driver Invoice HTML"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_GOTENBERG_SERVER_URL:3000/forms/chromium/convert/html",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "files",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1200,
+        80
+      ],
+      "id": "9f71a442-d192-41f2-ab92-6a31df7ac116",
+      "name": "Generate PDF - Gotenberg (Driver)"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Client Config').item.json.sheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "=819250553",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Reread Current Invoice Number').item.json.row_number }}",
+            "Invoice Number": "={{ Number($('Reread Current Invoice Number').item.json[\"Invoice Number\"]) + 1 }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Sheet GID",
+              "displayName": "Sheet GID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice Number",
+              "displayName": "Invoice Number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "IsDriverBased",
+              "displayName": "IsDriverBased",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1424,
+        80
+      ],
+      "id": "57e7dd94-1658-4cba-8dc9-648cd7471071",
+      "name": "Increment Invoice Number (Driver)"
+    },
+    {
+      "parameters": {
+        "jsCode": "const lineItems = $('Loop Drivers').item.json.lineItems;\nreturn lineItems.map(item => ({\n  json: { row_number: item.row_number }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        80
+      ],
+      "id": "c6de1046-9e01-4497-a6de-6d54569ccd6f",
+      "name": "Prep Driver Row Updates"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Client Config').item.json.sheetId }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{ $('Loop Companies').item.json[\"Sheet GID\"] }}",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $json.row_number }}",
+            "Invoice Status": "={{ 'Invoice generated (' + $now.format('MM/dd/yyyy') + ')' }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Broker",
+              "displayName": "Broker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Load#",
+              "displayName": "Load#",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Origin",
+              "displayName": "Origin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Destination",
+              "displayName": "Destination",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Driver",
+              "displayName": "Driver",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Booked By",
+              "displayName": "Booked By",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Service",
+              "displayName": "Service",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Invoice Status",
+              "displayName": "Invoice Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1872,
+        80
+      ],
+      "id": "bf4981f5-1605-41c8-9478-877738ccc93f",
+      "name": "Mark Driver Loads As Invoiced"
+    },
+    {
+      "parameters": {
+        "jsCode": "const company = $('Loop Companies').item.json.Company;\nconst invoiceNumber = $('Format Driver Invoice Number').item.json.invoiceNumber;\nconst driver = $('Loop Drivers').item.json.driver;\nconst pdfBinary = $('Generate PDF - Gotenberg (Driver)').item.binary.data;\n\nreturn [{\n  json: { company, invoiceNumber, driver },\n  binary: { data: pdfBinary }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        80
+      ],
+      "id": "4fb80540-fa41-4c8e-9a25-cca7ac785795",
+      "name": "Prepare Driver Email Data"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.recipientEmail || 'recipient@example.com' }}",
+        "subject": "={{ $json.company }} Invoice #{{ $json.invoiceNumber }} — Driver: {{ $json.driver }} — {{ $now.format('MM/dd/yyyy') }}",
+        "emailType": "text",
+        "message": "=Please find attached the invoice for {{ $json.company }}, driver {{ $json.driver }}, for this week's completed loads.",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2320,
+        160
+      ],
+      "id": "fcda5de2-5234-4a75-9316-a7f802e5a443",
+      "name": "Send a message"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Client Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Client Config": {
+      "main": [
+        [
+          {
+            "node": "Read Business Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Business Config": {
+      "main": [
+        [
+          {
+            "node": "Read Control Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Control Tab": {
+      "main": [
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Companies": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Read Company Tab",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Company Tab": {
+      "main": [
+        [
+          {
+            "node": "Filter Unbilled Loads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Driver Based": {
+      "main": [
+        [
+          {
+            "node": "Group Loads By Driver",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Grouped Invoice Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Grouped Invoice Data": {
+      "main": [
+        [
+          {
+            "node": "Format Invoice Number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Invoice Number": {
+      "main": [
+        [
+          {
+            "node": "Build Invoice HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Invoice HTML": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF - Gotenberg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF - Gotenberg": {
+      "main": [
+        [
+          {
+            "node": "Increment Invoice Number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Invoice Number": {
+      "main": [
+        [
+          {
+            "node": "Split Line Items For Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Line Items For Update": {
+      "main": [
+        [
+          {
+            "node": "Mark Loads As Invoiced",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Loads As Invoiced": {
+      "main": [
+        [
+          {
+            "node": "Prepare Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Email Data": {
+      "main": [
+        [
+          {
+            "node": "Email Grouped Invoice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Grouped Invoice": {
+      "main": [
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group Loads By Driver": {
+      "main": [
+        [
+          {
+            "node": "Loop Drivers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Drivers": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Reread Current Invoice Number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Unbilled Loads": {
+      "main": [
+        [
+          {
+            "node": "Check Has Loads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Has Loads": {
+      "main": [
+        [
+          {
+            "node": "Check Driver Based",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reread Current Invoice Number": {
+      "main": [
+        [
+          {
+            "node": "Format Driver Invoice Number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Driver Invoice Number": {
+      "main": [
+        [
+          {
+            "node": "Build Driver Invoice HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Driver Invoice HTML": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF - Gotenberg (Driver)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF - Gotenberg (Driver)": {
+      "main": [
+        [
+          {
+            "node": "Increment Invoice Number (Driver)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Invoice Number (Driver)": {
+      "main": [
+        [
+          {
+            "node": "Prep Driver Row Updates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Driver Row Updates": {
+      "main": [
+        [
+          {
+            "node": "Mark Driver Loads As Invoiced",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Driver Loads As Invoiced": {
+      "main": [
+        [
+          {
+            "node": "Prepare Driver Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Driver Email Data": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Loop Drivers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5d12e194-fd21-4ae3-ac1b-eb40e1ccd9f6",
+  "meta": {
+    "instanceId": "cb7833eae5b33198395ce788dc0f238c0c926ea9d73675d4534e4dc8771bb280"
+  },
+  "nodeGroups": [],
+  "id": "40TYImXcGEnRRzYB",
+  "tags": []
+}
