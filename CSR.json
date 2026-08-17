@@ -1,0 +1,151 @@
+{
+  "name": "CSR",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "627216d3-0da0-4a1e-ad5d-414396db281f",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -800,
+        112
+      ],
+      "id": "f6461702-74ad-44b8-8bf2-625f57fe6049",
+      "name": "Webhook",
+      "webhookId": "627216d3-0da0-4a1e-ad5d-414396db281f"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}\n",
+        "options": {
+          "systemMessage": "You are the virtual assistant for Aevon AI, an automations agency that builds done-for-you automation systems for trade contractors and service businesses in the US — plumbers, electricians, HVAC contractors, real estate agents, and med spas.\n\nYour job is to answer questions about Aevon AI's services, help visitors understand what we build, and guide them toward booking a discovery call.\n\nAevon AI offers three services:\n1. Missed Call Text-Back — when a business misses a call, an automated SMS goes out instantly, qualifies the lead, and notifies the owner\n2. Lead Capture Automation — form submissions are logged, followed up automatically, and the owner is notified with full lead details\n3. Custom Builds — bespoke automations built around a business's specific workflow problems\n\nPricing: $800–1,000 one-time setup fee, $150–250/month retainer.\n\nBooking link: https://calendly.com/aevonai-co/30min\n\nRules:\n- Keep replies short and direct. Two to four sentences maximum.\n- Never use the words: streamline, leverage, optimize, AI-powered solutions.\n- If someone asks about pricing, give the range and suggest a call for exact numbers.\n- If someone is ready to move forward or wants more info, direct them to book a call.\n- If a question is outside your knowledge, say \"I'm not sure about that — your best bet is to book a call and ask Mohammad directly.\"\n- Never make up services or capabilities that aren't listed above.\n- Tone: direct, confident, no fluff. Like a knowledgeable team member, not a bot."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -576,
+        112
+      ],
+      "id": "b9784e7c-e384-43ff-9a90-55bd0d7296be",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        336
+      ],
+      "id": "8bc6926d-d6f8-46c7-bee8-9d4e73380421",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "tCQxl49bMAxWmHNN",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"output\": \"{{ $json.output }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -224,
+        112
+      ],
+      "id": "fc6e4348-9d07-4b77-b146-1b41930750d4",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        -480,
+        464
+      ],
+      "id": "ba6bfa1f-401f-4bc6-8d1f-acb99f9063fd",
+      "name": "Simple Memory"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "91493d1f-997f-4f38-921a-e9ef035bd149",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bd304110601f7bca115f8d74a652ddd6405659961ce4bc20863e548522ce3111"
+  },
+  "nodeGroups": [],
+  "id": "yCE7pLnnkHutZjA6",
+  "tags": []
+}
