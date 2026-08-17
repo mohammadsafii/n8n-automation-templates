@@ -1,0 +1,570 @@
+{
+  "name": "AI SMS Lead Capture & Booking Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "missed-call-webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        272,
+        112
+      ],
+      "id": "21d361c8-2f00-4713-afa5-6f1ce830b1a2",
+      "name": "Webhook",
+      "webhookId": "missed-call-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "dab7a49b-042b-455c-8cc8-e3faa02b5194",
+              "leftValue": "={{$json.body.CallStatus}}",
+              "rightValue": "completed",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        800,
+        112
+      ],
+      "id": "b01006c2-3f1d-4e6a-a4b3-5a0f7d0f7653",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "from": "YOUR_TWILIO_PHONE_NUMBER",
+        "to": "={{ $json.body.From }}",
+        "message": "Hey sorry I missed you... what can i do for you?",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        112
+      ],
+      "id": "52fae36c-fba3-442e-8eff-ebd5370cfc6e",
+      "name": "Send Initial Outreach SMS"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Missed Calls Sheet",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $('Webhook').item.json.body.Timestamp }}",
+            "caller_number": "={{$('Webhook').item.json.body.From.replace('+', '')}}",
+            "call_status": "={{ $('Webhook').item.json.body.CallStatus }}",
+            "conversation_history": "[]"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caller_number",
+              "displayName": "caller_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "call_status",
+              "displayName": "call_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "conversation_history",
+              "displayName": "conversation_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1744,
+        112
+      ],
+      "id": "3d1ac8cc-7aa2-446f-bf27-ffe51e04b6de",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Missed Calls Sheet",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": ""
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "caller_number",
+              "lookupValue": "={{$('Webhook1').item.json.body.From.replace('+', '')}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        800,
+        304
+      ],
+      "id": "2dea38e1-40e0-4b28-b014-c42d4fd0d19e",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_GROQ_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": {{ JSON.stringify($json.messages) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1760,
+        304
+      ],
+      "id": "c6f7ae05-b6be-481b-92a0-13a0979ba50e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $input.first().json.choices[0].message.content;\nconst jsonMatch = content.match(/\\{[\\s\\S]*\\}/);\nconst parsed = JSON.parse(jsonMatch[0]);\nreturn [{ json: parsed }];;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        544
+      ],
+      "id": "44b68c0b-f687-4ca9-b930-22fd1f52b9df",
+      "name": "Parse"
+    },
+    {
+      "parameters": {
+        "jsCode": "const history = JSON.parse($('Get row(s) in sheet').first().json.conversation_history || '[]');\nconst newUserMessage = $('Webhook1').first().json.body.Body;\nconst aiResponse = $('Parse').first().json.text_response;\n\nhistory.push({ role: \"user\", content: newUserMessage });\nhistory.push({ role: \"assistant\", content: aiResponse });\n\nreturn [{ json: { updated_history: JSON.stringify(history) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        800,
+        544
+      ],
+      "id": "f012e1c0-7284-4e5f-ae6c-39216d56164b",
+      "name": "Build History"
+    },
+    {
+      "parameters": {
+        "jsCode": "const history = JSON.parse($input.first().json.conversation_history || '[]');\nconst systemPrompt = `# ROLE & OBJECTIVE\\nYou will be working for plumbing companies, electricians, HVAC contractors, and other service/trades businessmen.\\nYour Role is to respond to the calls missed by the businesses, asses the situation, evaluate the important details, and structure their input in terms of what the customer needs, at what location, time and the urgency of the task. Gather Information, and produce a well structured output.\\n\\n# USER PERSONA & TONE\\nYour texts should sound professional, yet friendly. the responses should not be generic or robotic. Write like a real person texting, not a customer service bot. Use casual punctuation, occasional lowercase, natural phrasing. Avoid exclamation marks. Never sound enthusiastic or overly polished. Keep it warm but real.\\nThe text responses should not be longer than 160 characters. (160-character limit only applies to the text_response string, not the entire JSON payload.)\\n\\n# OPERATIONAL PROTOCOL (THE ALGORITHM)\\nThe first thing you should evaluate about any incoming information is, what exact service is required by the customer. (for example; septic tank cleaning, new pipes or any new hardware needed to be installed, or maybe a clogged sink).\\nAfter that, evaluate the level of urgency yourself based on the customer's description. do not ask the customer about urgency directly. infer it from their words (e.g. \"asap\", \"flooding\", \"no heat\", \"urgent\" = high. \"when you can\" = low). establish if we can  schedule that for later, or does the customer need us urgently.\\nthen determine their location.\\nthen determine their exact contact details.\\nthen give them a fair idea of when and how the business will contact them.\\n\\n# INFORMATION TO GATHER\\nGather info naturally. Only ask one question per text response.\\nissue: [evaluate the customers problem]\\nurgency: [evaluate the level of urgency; how urgent is it, classify as a low, mid or high level urgency]\\ncustomer_name: [gather customers name]\\naddress:[evaluate/gather customers address]\\nstatus: [enter conversation status]\\nlead_quality: [enter the quality of the lead]\\n\\n# ENUM DEFINITIONS\\nstatus must ALWAYS be one of:\\n- awaiting_issue\\n- awaiting_address\\n- awaiting_name\\n- qualified\\n- closed\\n\\nurgency must ALWAYS be one of:\\n- low: (Minor issues that can wait several days.)\\n- mid: (Important issues that should be handled within 24 hours.)\\n- high: (Emergencies, active leaks, flooding, safety risks, no heating, electrical hazards.)\\n\\nlead_quality must ALWAYS be one of:\\n- hot: (Customer needs immediate service.)\\n- warm: (Interested but flexible timing.)\\n- cold: (Price shopping, vague inquiry, low intent.)\\n\\n# CONSTRAINTS & GUARDRAILS\\nnever do the following;\\nnever give pricing estimates.\\nnever give exact eta.\\ndo not repeatedly text and bother the customer.\\nif a lead goes cold, texting once, or a second time another day is fine. not more than that.\\n\\n# OUTPUT\\nThere should be 2 types of outputs... Structured backend output (lead_data) & Frontend communication (text_response)\\nthe output should strictly be a JSON; in the following format.\\n{\\n  \"text_response\": \"hey, sorry we missed ya — what's going on?\",\\n  \"lead_data\": {\\n    \"service_type\": \"unknown\",\\n    \"issue\": \"unknown\",\\n    \"urgency\": \"unknown\",\\n    \"customer_name\": \"unknown\",\\n    \"address\": \"unknown\",\\n    \"status\": \"awaiting_issue\",\\n    \"lead_quality\": \"cold\"\\n  }\\n}\\n\\n# DATA HANDLING RULES\\nIf information is unavailable or not yet collected, return \"unknown\".\\nNever invent customer details.\\n\\n# CUSTOMER RESPONSE RULES\\npurpose of message (only to extract next missing field of info).\\nmax one question per message.\\nno explanation of reasoning.\\nmust be under 160 characters.\\n\\n# OUTPUT RULES\\nReturn ONLY valid JSON.\\nDo not include explanations, markdown, or extra text.\\nAll fields must always exist.\\nUse \"unknown\" for missing values.\\nDo not include any text, explanation, or characters before or after the JSON object. Your entire response must start with { and end with }.\\nEnsure the output is a raw, unquoted JSON object. Do not escape quotes with backslashes (\\\").`;\n\nconst messages = [\n  { role: \"system\", content: systemPrompt },\n  ...history,\n  { role: \"user\", content: $('Webhook1').first().json.body.Body }\n];\nreturn [{ json: { messages } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        304
+      ],
+      "id": "490843c1-5f5d-4873-9bce-a9e5cc52d7fb",
+      "name": "Groq Input"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Missed Calls Sheet",
+          "cachedResultUrl": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "caller_number": "={{ $('Webhook1').first().json.body.From.replace('+', '') }}",
+            "conversation_history": "={{ $('Build History').first().json.updated_history }}"
+          },
+          "matchingColumns": [
+            "caller_number"
+          ],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "caller_number",
+              "displayName": "caller_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "call_status",
+              "displayName": "call_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "conversation_history",
+              "displayName": "conversation_history",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1328,
+        544
+      ],
+      "id": "c9691c3b-128f-4039-a1a0-9449c5ede5ab",
+      "name": "Update row in sheet"
+    },
+    {
+      "parameters": {
+        "from": "YOUR_TWILIO_PHONE_NUMBER",
+        "to": "BUSINESS_OWNER_PHONE_NUMBER",
+        "message": "={{ 'New qualified lead!\\n\\nName: ' + $('Parse').first().json.lead_data.customer_name + '\\nAddress: ' + $('Parse').first().json.lead_data.address + '\\nIssue: ' + $('Parse').first().json.lead_data.issue + '\\nUrgency: ' + $('Parse').first().json.lead_data.urgency }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        784
+      ],
+      "id": "f0219e66-3bf1-4877-8360-278134fc08a0",
+      "name": "Alert Owner - Qualified Lead"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "inbound-sms-webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        272,
+        304
+      ],
+      "id": "96212262-4dd1-47b9-a1bf-9b5cade867a1",
+      "name": "Webhook1",
+      "webhookId": "inbound-sms-webhook"
+    },
+    {
+      "parameters": {
+        "from": "YOUR_TWILIO_PHONE_NUMBER",
+        "to": "={{ $('Webhook1').first().json.body.From }}",
+        "message": "={{ $('Parse').first().json.text_response }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1776,
+        544
+      ],
+      "id": "738d1963-0857-4077-9091-6eae2cf68d2e",
+      "name": "Send AI Response SMS"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f0956f44-a56e-4bc8-b147-5e35cafcfc14",
+              "leftValue": "={{ $('Parse').first().json.lead_data.status }}",
+              "rightValue": "qualified",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        800,
+        800
+      ],
+      "id": "98e1d71b-4609-47c9-abce-4dd527c30777",
+      "name": "If Qualified"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send Initial Outreach SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Initial Outreach SMS": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Groq Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse": {
+      "main": [
+        [
+          {
+            "node": "Build History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Input": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build History": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send AI Response SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send AI Response SMS": {
+      "main": [
+        [
+          {
+            "node": "If Qualified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Qualified": {
+      "main": [
+        [
+          {
+            "node": "Alert Owner - Qualified Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "10000000-0000-0000-0000-000000000001",
+  "meta": {
+    "instanceId": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "nodeGroups": [],
+  "id": "template-ai-missed-call-lead-capture",
+  "tags": []
+}
